@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
-    const { phone, otp, deviceId, rememberDevice } = await req.json();
+    const { phone, otp, deviceId } = await req.json();
 
     if (!phone || !otp) {
       return NextResponse.json(
@@ -12,8 +12,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔍 Get latest valid OTP
-    const { data: otpRow, error } = await supabase
+    // Get latest valid OTP
+    const { data: otpRow, error: otpError } = await supabase
       .from("otp_requests")
       .select("*")
       .eq("phone", phone)
@@ -22,14 +22,14 @@ export async function POST(req: Request) {
       .limit(1)
       .single();
 
-    if (error || !otpRow) {
+    if (otpError || !otpRow) {
       return NextResponse.json(
         { success: false, error: "Invalid or expired OTP" },
         { status: 400 }
       );
     }
 
-    // ⏱️ Expiry check
+    // Check expiry
     if (new Date(otpRow.expires_at) < new Date()) {
       return NextResponse.json(
         { success: false, error: "OTP expired" },
@@ -37,54 +37,48 @@ export async function POST(req: Request) {
       );
     }
 
-    // ❌ Wrong OTP
+    // Check OTP match
     if (otpRow.otp_code !== otp) {
-      await supabase
-        .from("otp_requests")
-        .update({ attempts: otpRow.attempts + 1 })
-        .eq("id", otpRow.id);
-
       return NextResponse.json(
         { success: false, error: "Incorrect OTP" },
         { status: 400 }
       );
     }
 
-    // ✅ Mark OTP as used
+    // Mark OTP as used
     await supabase
       .from("otp_requests")
       .update({ used: true })
       .eq("id", otpRow.id);
 
-    // 👤 Get customer
-    const { data: customer } = await supabase
+    // 🔎 Get customer
+    const { data: customer, error: customerError } = await supabase
       .from("customers")
       .select("id")
       .eq("phone", phone)
       .single();
 
-    if (!customer) {
+    if (customerError || !customer) {
       return NextResponse.json(
         { success: false, error: "Customer not found" },
         { status: 400 }
       );
     }
 
-    // 💾 Create session ONLY if remembered
-    if (rememberDevice) {
-      await supabase
-        .from("customer_sessions")
-        .update({ active: false })
-        .eq("customer_id", customer.id);
+    // 🔴 Deactivate all previous sessions
+    await supabase
+      .from("customer_sessions")
+      .update({ active: false })
+      .eq("customer_id", customer.id);
 
-      await supabase.from("customer_sessions").insert({
-        customer_id: customer.id,
-        device_id: deviceId,
-      });
-    }
+    // ✅ Create new active session
+    await supabase.from("customer_sessions").insert({
+      customer_id: customer.id,
+      device_id: deviceId,
+      active: true,
+    });
 
     return NextResponse.json({ success: true });
-
   } catch (err) {
     console.error("Verify OTP error:", err);
     return NextResponse.json(
