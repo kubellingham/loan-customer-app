@@ -86,10 +86,22 @@ export default function DashboardPage() {
         </span>
       </p>
 
-      <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
-        <p className="text-gray-500">
-          Your dashboard is ready. More features coming soon.
+      {/* Loan card */}
+      <div className="rounded-xl border border-gray-800 p-6 bg-[#020617] max-w-md">
+        <h2 className="text-lg font-semibold mb-2">
+          No active loan
+        </h2>
+
+        <p className="text-gray-500 mb-6">
+          You currently don’t have any active loans.
         </p>
+
+        <button
+          onClick={() => router.push("/request-loan")}
+          className="w-full py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
+        >
+          Request a Loan
+        </button>
       </div>
     </main>
   );
