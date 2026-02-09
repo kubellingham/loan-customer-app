@@ -6,17 +6,21 @@ export async function POST(req: Request) {
     const { customerId, amount, totalRepayment } =
       await req.json();
 
-    // 15% interest
-    const interest = Math.round(amount * 0.15);
+    // Base logic
+    const monthlyInterestRate = 15; // 15%
+    const interest = Math.round(amount * (monthlyInterestRate / 100));
 
     const { error } = await supabase.from("loans").insert({
       customer_id: customerId,
       amount,
       total_repayment: totalRepayment,
       status: "pending",
+
+      // Required columns
       base_interest: interest,
+      monthly_interest: monthlyInterestRate,
       plan_name: "Standard Loan",
-      duration_days: 30, // ✅ required field
+      duration_days: 30,
     });
 
     if (error) {
