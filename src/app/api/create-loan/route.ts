@@ -3,17 +3,15 @@ import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
-    const { customerId, plan, amount, totalRepayment } =
+    const { customerId, amount, totalRepayment } =
       await req.json();
 
     const { error } = await supabase.from("loans").insert({
       customer_id: customerId,
-      plan_name: plan.name,
-      duration_days: plan.duration,
-      monthly_interest: plan.monthlyInterest,
       amount,
       total_repayment: totalRepayment,
       status: "pending",
+      base_interest: 15,
     });
 
     if (error) {
