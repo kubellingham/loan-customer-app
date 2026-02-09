@@ -6,12 +6,16 @@ export async function POST(req: Request) {
     const { customerId, amount, totalRepayment } =
       await req.json();
 
+    // Calculate interest amount (15%)
+    const interest = Math.round(amount * 0.15);
+
     const { error } = await supabase.from("loans").insert({
       customer_id: customerId,
       amount,
       total_repayment: totalRepayment,
       status: "pending",
-      base_interest: 15,
+      base_interest: interest,
+      plan_name: "Standard Loan", // ✅ added to fix error
     });
 
     if (error) {
