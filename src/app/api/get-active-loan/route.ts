@@ -15,8 +15,8 @@ export async function POST(req: Request) {
     const { data, error } = await supabase
       .from("loans")
       .select(
-        "amount, total_repayment, monthly_interest, duration_days, status"
-      )
+  "amount, total_repayment, monthly_interest, duration_days, status, approved_at, due_date, final_deadline"
+)
       .eq("customer_id", customerId)
       .in("status", ["pending", "active"])
       .order("created_at", { ascending: false })

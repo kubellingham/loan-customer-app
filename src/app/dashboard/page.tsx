@@ -16,6 +16,9 @@ type Loan = {
   monthly_interest: number;
   duration_days: number;
   status: string;
+  approved_at: string | null;
+  due_date: string | null;
+  final_deadline: string | null;
 };
 
 export default function DashboardPage() {
@@ -165,6 +168,32 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {loan.approved_at && (
+  <div className="space-y-2 text-sm mt-4 border-t border-gray-800 pt-4">
+    <div className="flex justify-between">
+      <span className="text-gray-400">Loan started</span>
+      <span>
+        {new Date(loan.approved_at).toLocaleDateString()}
+      </span>
+    </div>
+
+    <div className="flex justify-between">
+      <span className="text-gray-400">Interest due</span>
+      <span>
+        {new Date(loan.due_date!).toLocaleDateString()}
+      </span>
+    </div>
+
+    <div className="flex justify-between">
+      <span className="text-gray-400">Final deadline</span>
+      <span>
+        {new Date(loan.final_deadline!).toLocaleDateString()}
+      </span>
+    </div>
+  </div>
+)}
+
     </main>
   );
 }
