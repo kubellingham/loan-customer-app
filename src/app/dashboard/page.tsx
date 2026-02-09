@@ -124,79 +124,50 @@ export default function DashboardPage() {
       )}
 
       {loan && (
-  <div className="rounded-xl border border-gray-800 p-6 bg-[#020617] max-w-md">
-    <p className="text-gray-400 text-sm mb-2">
-      Active Loan
-    </p>
+        <div className="rounded-xl border border-gray-800 p-6 bg-[#020617] max-w-md">
+          <p className="text-gray-400 text-sm mb-2">
+            Active Loan
+          </p>
 
-    <p className="text-2xl font-semibold mb-4">
-      ₹{loan.amount.toLocaleString()}
-    </p>
+          <p className="text-2xl font-semibold mb-4">
+            ₹{loan.amount.toLocaleString()}
+          </p>
 
-    <div className="space-y-2 text-sm">
-      <div className="flex justify-between">
-        <span className="text-gray-400">
-          Monthly interest
-        </span>
-        <span>{loan.monthly_interest}%</span>
-      </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-400">
+                Monthly interest
+              </span>
+              <span>{loan.monthly_interest}%</span>
+            </div>
 
-      <div className="flex justify-between">
-        <span className="text-gray-400">
-          Duration
-        </span>
-        <span>{loan.duration_days} days</span>
-      </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">
+                Duration
+              </span>
+              <span>{loan.duration_days} days</span>
+            </div>
 
-      <div className="flex justify-between">
-        <span className="text-gray-400">
-          Total repayment
-        </span>
-        <span className="font-semibold">
-          ₹{loan.total_repayment.toLocaleString()}
-        </span>
-      </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">
+                Total repayment
+              </span>
+              <span className="font-semibold">
+                ₹{loan.total_repayment.toLocaleString()}
+              </span>
+            </div>
 
-      <div className="flex justify-between">
-        <span className="text-gray-400">
-          Status
-        </span>
-        <span className="capitalize">
-          {loan.status}
-        </span>
-      </div>
-    </div>
-
-    {loan.approved_at && (
-      <div className="space-y-2 text-sm mt-4 border-t border-gray-800 pt-4">
-        <div className="flex justify-between">
-          <span className="text-gray-400">Loan started</span>
-          <span>
-            {new Date(loan.approved_at).toLocaleDateString()}
-          </span>
+            <div className="flex justify-between">
+              <span className="text-gray-400">
+                Status
+              </span>
+              <span className="capitalize">
+                {loan.status}
+              </span>
+            </div>
+          </div>
         </div>
-
-        <div className="flex justify-between">
-          <span className="text-gray-400">Interest due</span>
-          <span>
-            {loan.due_date
-              ? new Date(loan.due_date).toLocaleDateString()
-              : "-"}
-          </span>
-        </div>
-
-        <div className="flex justify-between">
-          <span className="text-gray-400">Final deadline</span>
-          <span>
-            {loan.final_deadline
-              ? new Date(loan.final_deadline).toLocaleDateString()
-              : "-"}
-          </span>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+      )}
 
       {loan && loan.approved_at && (
   <div className="space-y-2 text-sm mt-4 border-t border-gray-800 pt-4">
