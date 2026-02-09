@@ -9,6 +9,7 @@ export default function RequestLoanPage() {
 
   const [amount, setAmount] = useState(50000);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function loadSession() {
@@ -38,9 +39,15 @@ export default function RequestLoanPage() {
   const totalRepayment = amount + interest;
 
   async function handleSubmit() {
-    if (!customerId) return;
+    if (!customerId) {
+      alert("Session expired. Please log in again.");
+      router.push("/");
+      return;
+    }
 
-    await fetch("/api/create-loan", {
+    setLoading(true);
+
+    const res = await fetch("/api/create-loan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -50,6 +57,15 @@ export default function RequestLoanPage() {
       }),
     });
 
+    const data = await res.json();
+    setLoading(false);
+
+    if (!data.success) {
+      alert("Loan failed: " + data.error);
+      return;
+    }
+
+    alert("Loan request submitted");
     router.push("/dashboard");
   }
 
@@ -117,9 +133,10 @@ export default function RequestLoanPage() {
         {/* Submit */}
         <button
           onClick={handleSubmit}
+          disabled={loading}
           className="w-full py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
         >
-          Submit Loan Request
+          {loading ? "Submitting..." : "Submit Loan Request"}
         </button>
       </div>
     </main>
