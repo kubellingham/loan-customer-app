@@ -3,10 +3,12 @@ import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
-    const { customerId, amount, totalRepayment } =
-      await req.json();
+    const body = await req.json();
+    console.log("Incoming loan body:", body);
 
-    const { error } = await supabase.from("loans").insert({
+    const { customerId, amount, totalRepayment } = body;
+
+    const { error, data } = await supabase.from("loans").insert({
       customer_id: customerId,
       amount,
       total_repayment: totalRepayment,
@@ -15,18 +17,20 @@ export async function POST(req: Request) {
     });
 
     if (error) {
-      console.error("Loan insert error:", error);
+      console.error("Supabase loan insert error:", error);
       return NextResponse.json(
-        { success: false },
+        { success: false, error: error.message },
         { status: 500 }
       );
     }
 
+    console.log("Loan inserted:", data);
+
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Create loan error:", err);
     return NextResponse.json(
-      { success: false },
+      { success: false, error: err.message },
       { status: 500 }
     );
   }
