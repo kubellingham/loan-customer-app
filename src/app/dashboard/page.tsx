@@ -30,7 +30,7 @@ async function loadData() {
 const deviceId = getDeviceId();
 
 ```
-  // 1. Check session
+  // Check session
   const sessionRes = await fetch("/api/check-session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -47,7 +47,7 @@ const deviceId = getDeviceId();
   const customerData = sessionData.customer;
   setCustomer(customerData);
 
-  // 2. Check active loan
+  // Check active loan
   const loanRes = await fetch("/api/get-active-loan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -89,8 +89,7 @@ Loading... </main>
 );
 }
 
-return ( <main className="min-h-screen bg-[#020617] px-6 py-10 text-white">
-{/* Logout */} <div className="flex justify-end mb-6"> <button
+return ( <main className="min-h-screen bg-[#020617] px-6 py-10 text-white"> <div className="flex justify-end mb-6"> <button
        onClick={handleLogout}
        className="text-sm text-red-400 hover:text-red-300"
      >
@@ -108,7 +107,6 @@ Logout </button> </div>
     </span>
   </p>
 
-  {/* Loan section */}
   {!loan && (
     <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
       <p className="text-gray-400 mb-4">
