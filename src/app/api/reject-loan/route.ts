@@ -30,21 +30,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const now = new Date();
-
-    const dueDate = new Date(now);
-    dueDate.setDate(dueDate.getDate() + 30);
-
-    const finalDeadline = new Date(now);
-    finalDeadline.setDate(finalDeadline.getDate() + 90);
-
     const { error } = await supabase
       .from("loans")
       .update({
         status: "rejected",
-        approved_at: now.toISOString(),
-        due_date: dueDate.toISOString(),
-        final_deadline: finalDeadline.toISOString(),
       })
       .eq("id", loanId);
 

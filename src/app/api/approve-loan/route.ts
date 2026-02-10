@@ -41,11 +41,11 @@ export async function POST(req: Request) {
     const { error } = await supabase
       .from("loans")
       .update({
-        status: "active",
-        approved_at: now.toISOString(),
-        due_date: dueDate.toISOString(),
-        final_deadline: finalDeadline.toISOString(),
-      })
+  status: "active",
+  approved_at: now.toISOString(),
+  due_date: dueDate.toISOString(),
+  final_deadline: finalDeadline.toISOString(),
+})
       .eq("id", loanId);
 
     if (error) {
