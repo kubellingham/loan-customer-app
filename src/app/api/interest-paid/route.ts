@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     // Get current loan
     const { data: loan, error: fetchError } = await supabase
       .from("loans")
-      .select("monthly_interest, approved_at")
+      .select("monthly_interest")
       .eq("id", loanId)
       .single();
 
@@ -26,25 +26,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const now = new Date();
-
-    // Move next cycle (30 days forward)
-    const newApprovedAt = now.toISOString();
-
-    const newDueDate = new Date(now);
-    newDueDate.setDate(newDueDate.getDate() + 30);
-
-    // Escalate interest
+    // Decide next interest
     let nextInterest = loan.monthly_interest;
 
     if (loan.monthly_interest === 15) nextInterest = 18;
     else if (loan.monthly_interest === 18) nextInterest = 21;
 
+    const now = new Date();
+    const newDueDate = new Date(now);
+    newDueDate.setDate(newDueDate.getDate() + 30);
+
     const { error: updateError } = await supabase
       .from("loans")
       .update({
         monthly_interest: nextInterest,
-        approved_at: newApprovedAt,
+        approved_at: now.toISOString(),
         due_date: newDueDate.toISOString(),
       })
       .eq("id", loanId);
