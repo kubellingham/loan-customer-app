@@ -1,24 +1,40 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+export async function OPTIONS() {
+  return NextResponse.json(
+    {},
+    {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    }
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const { loanId } = await req.json();
 
     if (!loanId) {
       return NextResponse.json(
-        { success: false, error: "Loan ID required" },
-        { status: 400 }
+        { success: false },
+        {
+          status: 400,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
       );
     }
 
     const now = new Date();
 
-    // 30 days due date
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 30);
 
-    // 90 days final deadline
     const finalDeadline = new Date(now);
     finalDeadline.setDate(finalDeadline.getDate() + 90);
 
@@ -35,15 +51,32 @@ export async function POST(req: Request) {
     if (error) {
       return NextResponse.json(
         { success: false, error: error.message },
-        { status: 500 }
+        {
+          status: 500,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: true },
+      {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
     );
   }
 }
