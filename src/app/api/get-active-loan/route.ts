@@ -18,8 +18,7 @@ export async function POST(req: Request) {
         "amount, total_repayment, monthly_interest, duration_days, status, approved_at, due_date, final_deadline"
       )
       .eq("customer_id", customerId)
-      .eq("status", "approved") // only approved loans
-      .order("approved_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
