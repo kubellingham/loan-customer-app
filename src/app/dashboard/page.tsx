@@ -78,6 +78,28 @@ export default function DashboardPage() {
     router.push("/");
   }
 
+  function getDaysRemaining() {
+    if (!loan?.due_date) return null;
+
+    const now = new Date();
+    const due = new Date(loan.due_date);
+
+    const diff = due.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    return days;
+  }
+
+  const daysRemaining = getDaysRemaining();
+
+  function getCountdownColor() {
+    if (daysRemaining === null) return "text-gray-400";
+
+    if (daysRemaining <= 3) return "text-red-400";
+    if (daysRemaining <= 7) return "text-yellow-400";
+    return "text-green-400";
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#020617] flex items-center justify-center text-white">
@@ -143,13 +165,6 @@ export default function DashboardPage() {
 
             <div className="flex justify-between">
               <span className="text-gray-400">
-                Duration
-              </span>
-              <span>{loan.duration_days} days</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">
                 Total repayment
               </span>
               <span className="font-semibold">
@@ -157,47 +172,45 @@ export default function DashboardPage() {
               </span>
             </div>
 
-            <div className="flex justify-between">
-              <span className="text-gray-400">
-                Status
-              </span>
-              <span className="capitalize">
-                {loan.status}
-              </span>
-            </div>
+            {loan.approved_at && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">
+                  Loan started
+                </span>
+                <span>
+                  {new Date(
+                    loan.approved_at
+                  ).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+
+            {loan.due_date && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">
+                  Interest due
+                </span>
+                <span>
+                  {new Date(
+                    loan.due_date
+                  ).toLocaleDateString()}
+                </span>
+              </div>
+            )}
           </div>
+
+          {/* Countdown */}
+          {daysRemaining !== null && (
+            <div
+              className={`mt-4 text-sm font-medium ${getCountdownColor()}`}
+            >
+              {daysRemaining > 0
+                ? `${daysRemaining} day(s) left to pay interest`
+                : "Interest payment overdue"}
+            </div>
+          )}
         </div>
       )}
-
-      {loan && loan.approved_at && (
-  <div className="space-y-2 text-sm mt-4 border-t border-gray-800 pt-4">
-    <div className="flex justify-between">
-      <span className="text-gray-400">Loan started</span>
-      <span>
-        {new Date(loan.approved_at).toLocaleDateString()}
-      </span>
-    </div>
-
-    <div className="flex justify-between">
-      <span className="text-gray-400">Interest due</span>
-      <span>
-        {loan.due_date
-          ? new Date(loan.due_date).toLocaleDateString()
-          : "-"}
-      </span>
-    </div>
-
-    <div className="flex justify-between">
-      <span className="text-gray-400">Final deadline</span>
-      <span>
-        {loan.final_deadline
-          ? new Date(loan.final_deadline).toLocaleDateString()
-          : "-"}
-      </span>
-    </div>
-  </div>
-)}
-
     </main>
   );
 }
