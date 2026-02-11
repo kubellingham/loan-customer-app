@@ -1,62 +1,72 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+export async function OPTIONS() {
+  return NextResponse.json(
+    {},
+    {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    }
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const { loanId } = await req.json();
 
     if (!loanId) {
       return NextResponse.json(
-        { success: false, error: "Missing loanId" },
-        { status: 400 }
+        { success: false },
+        {
+          status: 400,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
       );
     }
 
-    // Get current loan
-    const { data: loan, error: fetchError } = await supabase
-      .from("loans")
-      .select("monthly_interest")
-      .eq("id", loanId)
-      .single();
-
-    if (fetchError || !loan) {
-      return NextResponse.json(
-        { success: false, error: "Loan not found" },
-        { status: 500 }
-      );
-    }
-
-    // Decide next interest
-    let nextInterest = loan.monthly_interest;
-
-    if (loan.monthly_interest === 15) nextInterest = 18;
-    else if (loan.monthly_interest === 18) nextInterest = 21;
-
-    const now = new Date();
-    const newDueDate = new Date(now);
-    newDueDate.setDate(newDueDate.getDate() + 30);
-
-    const { error: updateError } = await supabase
+    // Move to next month interest
+    const { error } = await supabase
       .from("loans")
       .update({
-        monthly_interest: nextInterest,
-        approved_at: now.toISOString(),
-        due_date: newDueDate.toISOString(),
+        monthly_interest: 18,
       })
       .eq("id", loanId);
 
-    if (updateError) {
+    if (error) {
       return NextResponse.json(
-        { success: false, error: updateError.message },
-        { status: 500 }
+        { success: false, error: error.message },
+        {
+          status: 500,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: true },
+      {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
+    );
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
     );
   }
 }
