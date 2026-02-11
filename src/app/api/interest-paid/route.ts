@@ -20,12 +20,12 @@ export async function POST(req: Request) {
 
     if (!loanId) {
       return NextResponse.json(
-        { success: false },
+        { success: false, error: "Loan ID required" },
         { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
-    // 1. Fetch current loan
+    // 1. Get current loan
     const { data: loan, error: fetchError } = await supabase
       .from("loans")
       .select("*")
@@ -39,33 +39,39 @@ export async function POST(req: Request) {
       );
     }
 
-    const currentInterest = loan.monthly_interest;
-    const principal = loan.amount;
+    // 2. Check if already at maximum interest
+    if (loan.monthly_interest >= 21) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Maximum loan period reached. Full repayment required.",
+        },
+        { headers: { "Access-Control-Allow-Origin": "*" } }
+      );
+    }
 
-    // 2. Determine next interest tier
-    let newInterest = currentInterest;
+    // 3. Calculate next interest
+    let nextInterest = 18;
+    if (loan.monthly_interest === 18) {
+      nextInterest = 21;
+    }
 
-    if (currentInterest === 15) newInterest = 18;
-    else if (currentInterest === 18) newInterest = 21;
-    else newInterest = 21; // cap at 21%
+    // 4. Extend due date by 30 days from CURRENT due date
+    const oldDue = new Date(loan.due_date);
+    oldDue.setDate(oldDue.getDate() + 30);
 
-    // 3. New due date = old due date + 30 days
-    const oldDueDate = new Date(loan.due_date);
-    const newDueDate = new Date(oldDueDate);
-    newDueDate.setDate(newDueDate.getDate() + 30);
+    const newDueDate = oldDue.toISOString();
 
-    // 4. Recalculate total repayment
-    const newTotalRepayment = Math.round(
-      principal + (principal * newInterest) / 100
-    );
+    // 5. Increment interest count
+    const newCount = (loan.interest_paid_count || 0) + 1;
 
-    // 5. Update loan
+    // 6. Update loan
     const { error: updateError } = await supabase
       .from("loans")
       .update({
-        monthly_interest: newInterest,
-        due_date: newDueDate.toISOString(),
-        total_repayment: newTotalRepayment,
+        monthly_interest: nextInterest,
+        due_date: newDueDate,
+        interest_paid_count: newCount,
       })
       .eq("id", loanId);
 
@@ -77,7 +83,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { success: true },
+      {
+        success: true,
+        message: "Interest recorded. Loan moved to next stage.",
+      },
       { headers: { "Access-Control-Allow-Origin": "*" } }
     );
   } catch (err: any) {
