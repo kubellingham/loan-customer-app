@@ -21,73 +21,69 @@ export async function POST(req: Request) {
     if (!loanId) {
       return NextResponse.json(
         { success: false },
-        {
-          status: 400,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        }
+        { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
-    // 1. Get current loan
+    // 1. Fetch current loan
     const { data: loan, error: fetchError } = await supabase
       .from("loans")
-      .select("due_date, final_deadline, monthly_interest")
+      .select("*")
       .eq("id", loanId)
       .single();
 
     if (fetchError || !loan) {
       return NextResponse.json(
         { success: false, error: "Loan not found" },
-        {
-          status: 500,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        }
+        { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
-    // 2. Extend from existing dates
-    const newDue = new Date(loan.due_date);
-    newDue.setDate(newDue.getDate() + 30);
+    const currentInterest = loan.monthly_interest;
+    const principal = loan.amount;
 
-    const newFinal = new Date(loan.final_deadline);
-    newFinal.setDate(newFinal.getDate() + 30);
+    // 2. Determine next interest tier
+    let newInterest = currentInterest;
 
-    // 3. Increase interest
-    const newInterest = (loan.monthly_interest || 15) + 3;
+    if (currentInterest === 15) newInterest = 18;
+    else if (currentInterest === 18) newInterest = 21;
+    else newInterest = 21; // cap at 21%
 
-    // 4. Update loan
+    // 3. New due date = old due date + 30 days
+    const oldDueDate = new Date(loan.due_date);
+    const newDueDate = new Date(oldDueDate);
+    newDueDate.setDate(newDueDate.getDate() + 30);
+
+    // 4. Recalculate total repayment
+    const newTotalRepayment = Math.round(
+      principal + (principal * newInterest) / 100
+    );
+
+    // 5. Update loan
     const { error: updateError } = await supabase
       .from("loans")
       .update({
-        due_date: newDue.toISOString(),
-        final_deadline: newFinal.toISOString(),
         monthly_interest: newInterest,
+        due_date: newDueDate.toISOString(),
+        total_repayment: newTotalRepayment,
       })
       .eq("id", loanId);
 
     if (updateError) {
       return NextResponse.json(
         { success: false, error: updateError.message },
-        {
-          status: 500,
-          headers: { "Access-Control-Allow-Origin": "*" },
-        }
+        { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
     return NextResponse.json(
       { success: true },
-      {
-        headers: { "Access-Control-Allow-Origin": "*" },
-      }
+      { headers: { "Access-Control-Allow-Origin": "*" } }
     );
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message },
-      {
-        status: 500,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      }
+      { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
     );
   }
 }

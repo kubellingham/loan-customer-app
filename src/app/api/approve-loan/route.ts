@@ -21,16 +21,13 @@ export async function POST(req: Request) {
     if (!loanId) {
       return NextResponse.json(
         { success: false },
-        {
-          status: 400,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-          },
-        }
+        { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
     const now = new Date();
+
+    const approvedAt = now.toISOString();
 
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 30);
@@ -41,42 +38,29 @@ export async function POST(req: Request) {
     const { error } = await supabase
       .from("loans")
       .update({
-  status: "active",
-  approved_at: now.toISOString(),
-  due_date: dueDate.toISOString(),
-  final_deadline: finalDeadline.toISOString(),
-})
+        status: "active",
+        approved_at: approvedAt,
+        due_date: dueDate.toISOString(),
+        final_deadline: finalDeadline.toISOString(),
+        monthly_interest: 15,
+      })
       .eq("id", loanId);
 
     if (error) {
       return NextResponse.json(
         { success: false, error: error.message },
-        {
-          status: 500,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-          },
-        }
+        { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
       );
     }
 
     return NextResponse.json(
       { success: true },
-      {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
+      { headers: { "Access-Control-Allow-Origin": "*" } }
     );
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message },
-      {
-        status: 500,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
+      { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
     );
   }
 }
