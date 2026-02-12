@@ -11,21 +11,20 @@ type Customer = {
 };
 
 type Loan = {
+  id: string;
   amount: number;
   total_repayment: number;
-  monthly_interest: number;
-  duration_days: number;
   status: string;
   approved_at: string | null;
   due_date: string | null;
-  final_deadline: string | null;
+  created_at: string;
 };
 
 export default function DashboardPage() {
   const router = useRouter();
 
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loan, setLoan] = useState<Loan | null>(null);
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,7 +47,7 @@ export default function DashboardPage() {
       const customerData = sessionData.customer;
       setCustomer(customerData);
 
-      const loanRes = await fetch("/api/get-active-loan", {
+      const loanRes = await fetch("/api/get-customer-loans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customerId: customerData.id }),
@@ -56,8 +55,8 @@ export default function DashboardPage() {
 
       const loanData = await loanRes.json();
 
-      if (loanData.success && loanData.loan) {
-        setLoan(loanData.loan);
+      if (loanData.success && loanData.loans) {
+        setLoans(loanData.loans);
       }
 
       setLoading(false);
@@ -78,27 +77,33 @@ export default function DashboardPage() {
     router.push("/");
   }
 
-  function getDaysRemaining() {
-    if (!loan?.due_date) return null;
+  function getDaysRemaining(dueDate: string | null) {
+    if (!dueDate) return null;
 
     const now = new Date();
-    const due = new Date(loan.due_date);
+    const due = new Date(dueDate);
 
     const diff = due.getTime() - now.getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-    return days;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
-  const daysRemaining = getDaysRemaining();
+  // Separate loans
+  const activeLoans = loans
+    .filter((l) => l.status === "active" && l.due_date)
+    .sort(
+      (a, b) =>
+        new Date(a.due_date!).getTime() -
+        new Date(b.due_date!).getTime()
+    );
 
-  function getCountdownColor() {
-    if (daysRemaining === null) return "text-gray-400";
+  const pendingLoans = loans.filter(
+    (l) => l.status === "pending"
+  );
 
-    if (daysRemaining <= 3) return "text-red-400";
-    if (daysRemaining <= 7) return "text-yellow-400";
-    return "text-green-400";
-  }
+  const mainLoan = activeLoans[0] || null;
+  const otherLoans = loans.filter(
+    (l) => !mainLoan || l.id !== mainLoan.id
+  );
 
   if (loading) {
     return (
@@ -130,81 +135,51 @@ export default function DashboardPage() {
         </span>
       </p>
 
-      <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
-  {!loan ? (
-    <p className="text-gray-400 mb-4">
-      You have no active loan.
-    </p>
-  ) : (
-    <p className="text-yellow-400 mb-4">
-      You already have a pending or active loan.
-    </p>
-  )}
+      {/* No loans */}
+      {loans.length === 0 && (
+        <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
+          <p className="text-gray-400 mb-4">
+            You have no active loan.
+          </p>
 
-  <button
-    onClick={() => {
-      if (loan) {
-        const confirm = window.confirm(
-          "You already have a pending or active loan. Do you wish to proceed?"
-        );
-        if (!confirm) return;
-      }
-      router.push("/request-loan");
-    }}
-    className="px-5 py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
-  >
-    Request Loan
-  </button>
-</div>
+          <button
+            onClick={() => router.push("/request-loan")}
+            className="px-5 py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
+          >
+            Request Loan
+          </button>
+        </div>
+      )}
 
-      {loan && (
-        <div className="rounded-xl border border-gray-800 p-6 bg-[#020617] max-w-md">
+      {/* Main active loan */}
+      {mainLoan && (
+        <div className="rounded-xl border border-gray-800 p-6 bg-[#020617] mb-6">
           <p className="text-gray-400 text-sm mb-2">
-            Active Loan
+            Most urgent loan
           </p>
 
           <p className="text-2xl font-semibold mb-4">
-            ₹{loan.amount.toLocaleString()}
+            ₹{mainLoan.amount.toLocaleString()}
           </p>
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-400">
-                Monthly interest
-              </span>
-              <span>{loan.monthly_interest}%</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">
                 Total repayment
               </span>
               <span className="font-semibold">
-                ₹{loan.total_repayment.toLocaleString()}
+                ₹{mainLoan.total_repayment.toLocaleString()}
               </span>
             </div>
 
-            {loan.approved_at && (
+            {mainLoan.due_date && (
               <div className="flex justify-between">
                 <span className="text-gray-400">
-                  Loan started
+                  Due date
                 </span>
                 <span>
                   {new Date(
-                    loan.approved_at
-                  ).toLocaleDateString()}
-                </span>
-              </div>
-            )}
-
-            {loan.due_date && (
-              <div className="flex justify-between">
-                <span className="text-gray-400">
-                  Interest due
-                </span>
-                <span>
-                  {new Date(
-                    loan.due_date
+                    mainLoan.due_date
                   ).toLocaleDateString()}
                 </span>
               </div>
@@ -212,15 +187,68 @@ export default function DashboardPage() {
           </div>
 
           {/* Countdown */}
-          {daysRemaining !== null && (
-            <div
-              className={`mt-4 text-sm font-medium ${getCountdownColor()}`}
-            >
-              {daysRemaining > 0
-                ? `${daysRemaining} day(s) left to pay interest`
-                : "Interest payment overdue"}
+          {mainLoan.due_date && (
+            <div className="mt-4 text-sm font-medium">
+              {(() => {
+                const days = getDaysRemaining(
+                  mainLoan.due_date
+                );
+                if (days === null) return null;
+
+                if (days > 0)
+                  return `${days} day(s) remaining`;
+                if (days === 0) return "Due today";
+                return `Overdue by ${Math.abs(days)} days`;
+              })()}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Other loans */}
+      {otherLoans.length > 0 && (
+        <div className="space-y-4">
+          <p className="text-gray-400 text-sm">
+            Other loans
+          </p>
+
+          {otherLoans.map((loan) => (
+            <div
+              key={loan.id}
+              className="rounded-xl border border-gray-800 p-4 bg-[#020617]"
+            >
+              <div className="flex justify-between">
+                <span className="text-gray-400">
+                  Amount
+                </span>
+                <span>
+                  ₹{loan.amount.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-400">
+                  Status
+                </span>
+                <span className="capitalize">
+                  {loan.status}
+                </span>
+              </div>
+
+              {loan.due_date && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">
+                    Due date
+                  </span>
+                  <span>
+                    {new Date(
+                      loan.due_date
+                    ).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </main>
