@@ -13,9 +13,12 @@ type Customer = {
 type Loan = {
   amount: number;
   total_repayment: number;
+  monthly_interest: number;
+  duration_days: number;
   status: string;
   approved_at: string | null;
   due_date: string | null;
+  final_deadline: string | null;
 };
 
 export default function DashboardPage() {
@@ -89,6 +92,14 @@ export default function DashboardPage() {
 
   const daysRemaining = getDaysRemaining();
 
+  function getCountdownColor() {
+    if (daysRemaining === null) return "text-gray-400";
+
+    if (daysRemaining <= 3) return "text-red-400";
+    if (daysRemaining <= 7) return "text-yellow-400";
+    return "text-green-400";
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#020617] flex items-center justify-center text-white">
@@ -119,20 +130,32 @@ export default function DashboardPage() {
         </span>
       </p>
 
-      {!loan && (
-        <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
-          <p className="text-gray-400 mb-4">
-            You have no active loan.
-          </p>
+      <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
+  {!loan ? (
+    <p className="text-gray-400 mb-4">
+      You have no active loan.
+    </p>
+  ) : (
+    <p className="text-yellow-400 mb-4">
+      You already have a pending or active loan.
+    </p>
+  )}
 
-          <button
-            onClick={() => router.push("/request-loan")}
-            className="px-5 py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
-          >
-            Request Loan
-          </button>
-        </div>
-      )}
+  <button
+    onClick={() => {
+      if (loan) {
+        const confirm = window.confirm(
+          "You already have a pending or active loan. Do you wish to proceed?"
+        );
+        if (!confirm) return;
+      }
+      router.push("/request-loan");
+    }}
+    className="px-5 py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
+  >
+    Request Loan
+  </button>
+</div>
 
       {loan && (
         <div className="rounded-xl border border-gray-800 p-6 bg-[#020617] max-w-md">
@@ -145,6 +168,13 @@ export default function DashboardPage() {
           </p>
 
           <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-400">
+                Monthly interest
+              </span>
+              <span>{loan.monthly_interest}%</span>
+            </div>
+
             <div className="flex justify-between">
               <span className="text-gray-400">
                 Total repayment
@@ -170,7 +200,7 @@ export default function DashboardPage() {
             {loan.due_date && (
               <div className="flex justify-between">
                 <span className="text-gray-400">
-                  Due date
+                  Interest due
                 </span>
                 <span>
                   {new Date(
@@ -181,11 +211,14 @@ export default function DashboardPage() {
             )}
           </div>
 
+          {/* Countdown */}
           {daysRemaining !== null && (
-            <div className="mt-4 text-sm font-medium">
+            <div
+              className={`mt-4 text-sm font-medium ${getCountdownColor()}`}
+            >
               {daysRemaining > 0
-                ? `${daysRemaining} day(s) remaining`
-                : `Overdue by ${Math.abs(daysRemaining)} day(s)`}
+                ? `${daysRemaining} day(s) left to pay interest`
+                : "Interest payment overdue"}
             </div>
           )}
         </div>
