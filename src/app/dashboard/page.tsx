@@ -25,6 +25,7 @@ export default function DashboardPage() {
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [expandedLoanId, setExpandedLoanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -96,10 +97,6 @@ export default function DashboardPage() {
         new Date(b.due_date!).getTime()
     );
 
-  const pendingLoans = loans.filter(
-    (l) => l.status === "pending"
-  );
-
   const mainLoan = activeLoans[0] || null;
   const otherLoans = loans.filter(
     (l) => !mainLoan || l.id !== mainLoan.id
@@ -135,19 +132,21 @@ export default function DashboardPage() {
         </span>
       </p>
 
-      {/* No loans */}
+      {/* Always visible request button */}
+      <div className="mb-8">
+        <button
+          onClick={() => router.push("/request-loan")}
+          className="px-5 py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
+        >
+          Request Another Loan
+        </button>
+      </div>
+
       {loans.length === 0 && (
         <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
-          <p className="text-gray-400 mb-4">
+          <p className="text-gray-400">
             You have no active loan.
           </p>
-
-          <button
-            onClick={() => router.push("/request-loan")}
-            className="px-5 py-3 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition"
-          >
-            Request Loan
-          </button>
         </div>
       )}
 
@@ -205,50 +204,86 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Other loans */}
+      {/* Other loans (expandable) */}
       {otherLoans.length > 0 && (
         <div className="space-y-4">
           <p className="text-gray-400 text-sm">
             Other loans
           </p>
 
-          {otherLoans.map((loan) => (
-            <div
-              key={loan.id}
-              className="rounded-xl border border-gray-800 p-4 bg-[#020617]"
-            >
-              <div className="flex justify-between">
-                <span className="text-gray-400">
-                  Amount
-                </span>
-                <span>
-                  ₹{loan.amount.toLocaleString()}
-                </span>
-              </div>
+          {otherLoans.map((loan) => {
+            const isExpanded =
+              expandedLoanId === loan.id;
 
-              <div className="flex justify-between">
-                <span className="text-gray-400">
-                  Status
-                </span>
-                <span className="capitalize">
-                  {loan.status}
-                </span>
-              </div>
-
-              {loan.due_date && (
+            return (
+              <div
+                key={loan.id}
+                onClick={() =>
+                  setExpandedLoanId(
+                    isExpanded ? null : loan.id
+                  )
+                }
+                className="rounded-xl border border-gray-800 p-4 bg-[#020617] cursor-pointer"
+              >
                 <div className="flex justify-between">
                   <span className="text-gray-400">
-                    Due date
+                    Amount
                   </span>
                   <span>
-                    {new Date(
-                      loan.due_date
-                    ).toLocaleDateString()}
+                    ₹{loan.amount.toLocaleString()}
                   </span>
                 </div>
-              )}
-            </div>
-          ))}
+
+                <div className="flex justify-between">
+                  <span className="text-gray-400">
+                    Status
+                  </span>
+                  <span className="capitalize">
+                    {loan.status}
+                  </span>
+                </div>
+
+                {isExpanded && (
+                  <div className="mt-4 space-y-2 text-sm border-t border-gray-800 pt-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">
+                        Total repayment
+                      </span>
+                      <span>
+                        ₹{loan.total_repayment.toLocaleString()}
+                      </span>
+                    </div>
+
+                    {loan.approved_at && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">
+                          Loan started
+                        </span>
+                        <span>
+                          {new Date(
+                            loan.approved_at
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {loan.due_date && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">
+                          Due date
+                        </span>
+                        <span>
+                          {new Date(
+                            loan.due_date
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </main>
