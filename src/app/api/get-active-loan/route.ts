@@ -15,9 +15,10 @@ export async function POST(req: Request) {
     const { data, error } = await supabase
       .from("loans")
       .select(
-        "amount, total_repayment, monthly_interest, duration_days, status, approved_at, due_date, final_deadline"
+        "amount, total_repayment, status, approved_at, due_date"
       )
       .eq("customer_id", customerId)
+      .eq("status", "active")   // 🔒 only active loans
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
