@@ -2,16 +2,13 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
 export async function OPTIONS() {
-  return NextResponse.json(
-    {},
-    {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    }
-  );
+  return NextResponse.json({}, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
 }
 
 export async function POST(req: Request) {
@@ -25,15 +22,27 @@ export async function POST(req: Request) {
       );
     }
 
-    const now = new Date();
+    // Get loan amount
+    const { data: loan, error: loanError } = await supabase
+      .from("loans")
+      .select("amount")
+      .eq("id", loanId)
+      .single();
 
+    if (loanError || !loan) {
+      return NextResponse.json(
+        { success: false, error: "Loan not found" },
+        { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+
+    const now = new Date();
     const approvedAt = now.toISOString();
 
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 30);
 
-    const finalDeadline = new Date(now);
-    finalDeadline.setDate(finalDeadline.getDate() + 90);
+    const totalRepayment = Math.round(loan.amount * 1.15);
 
     const { error } = await supabase
       .from("loans")
@@ -41,8 +50,7 @@ export async function POST(req: Request) {
         status: "active",
         approved_at: approvedAt,
         due_date: dueDate.toISOString(),
-        final_deadline: finalDeadline.toISOString(),
-        monthly_interest: 15,
+        total_repayment: totalRepayment,
       })
       .eq("id", loanId);
 

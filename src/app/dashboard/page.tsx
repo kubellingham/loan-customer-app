@@ -13,12 +13,9 @@ type Customer = {
 type Loan = {
   amount: number;
   total_repayment: number;
-  monthly_interest: number;
-  duration_days: number;
   status: string;
   approved_at: string | null;
   due_date: string | null;
-  final_deadline: string | null;
 };
 
 export default function DashboardPage() {
@@ -92,14 +89,6 @@ export default function DashboardPage() {
 
   const daysRemaining = getDaysRemaining();
 
-  function getCountdownColor() {
-    if (daysRemaining === null) return "text-gray-400";
-
-    if (daysRemaining <= 3) return "text-red-400";
-    if (daysRemaining <= 7) return "text-yellow-400";
-    return "text-green-400";
-  }
-
   if (loading) {
     return (
       <main className="min-h-screen bg-[#020617] flex items-center justify-center text-white">
@@ -158,13 +147,6 @@ export default function DashboardPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-400">
-                Monthly interest
-              </span>
-              <span>{loan.monthly_interest}%</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">
                 Total repayment
               </span>
               <span className="font-semibold">
@@ -188,7 +170,7 @@ export default function DashboardPage() {
             {loan.due_date && (
               <div className="flex justify-between">
                 <span className="text-gray-400">
-                  Interest due
+                  Due date
                 </span>
                 <span>
                   {new Date(
@@ -199,14 +181,11 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Countdown */}
           {daysRemaining !== null && (
-            <div
-              className={`mt-4 text-sm font-medium ${getCountdownColor()}`}
-            >
+            <div className="mt-4 text-sm font-medium">
               {daysRemaining > 0
-                ? `${daysRemaining} day(s) left to pay interest`
-                : "Interest payment overdue"}
+                ? `${daysRemaining} day(s) remaining`
+                : `Overdue by ${Math.abs(daysRemaining)} day(s)`}
             </div>
           )}
         </div>
