@@ -132,7 +132,7 @@ export default function DashboardPage() {
         </span>
       </p>
 
-      {/* Always visible request button */}
+      {/* Request button */}
       <div className="mb-8">
         <button
           onClick={() => router.push("/request-loan")}
@@ -218,33 +218,48 @@ export default function DashboardPage() {
             return (
               <div
                 key={loan.id}
-                onClick={() =>
-                  setExpandedLoanId(
-                    isExpanded ? null : loan.id
-                  )
-                }
-                className="rounded-xl border border-gray-800 p-4 bg-[#020617] cursor-pointer"
+                className="rounded-xl border border-gray-800 bg-[#020617]"
               >
-                <div className="flex justify-between">
-                  <span className="text-gray-400">
-                    Amount
-                  </span>
-                  <span>
-                    ₹{loan.amount.toLocaleString()}
-                  </span>
+                {/* Header */}
+                <div
+                  onClick={() =>
+                    setExpandedLoanId(
+                      isExpanded ? null : loan.id
+                    )
+                  }
+                  className="p-4 cursor-pointer"
+                >
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">
+                      Amount
+                    </span>
+                    <span>
+                      ₹{loan.amount.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">
+                      Status
+                    </span>
+                    <span className="capitalize">
+                      {loan.status}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex justify-between">
-                  <span className="text-gray-400">
-                    Status
-                  </span>
-                  <span className="capitalize">
-                    {loan.status}
-                  </span>
-                </div>
-
+                {/* Expanded content */}
                 {isExpanded && (
-                  <div className="mt-4 space-y-2 text-sm border-t border-gray-800 pt-3">
+                  <div className="px-4 pb-4 space-y-3 text-sm border-t border-gray-800 pt-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">
+                        Loan ID
+                      </span>
+                      <span className="font-mono text-xs">
+                        {loan.id}
+                      </span>
+                    </div>
+
                     <div className="flex justify-between">
                       <span className="text-gray-400">
                         Total repayment
@@ -270,7 +285,7 @@ export default function DashboardPage() {
                     {loan.due_date && (
                       <div className="flex justify-between">
                         <span className="text-gray-400">
-                          Due date
+                          Return by
                         </span>
                         <span>
                           {new Date(
@@ -278,6 +293,20 @@ export default function DashboardPage() {
                           ).toLocaleDateString()}
                         </span>
                       </div>
+                    )}
+
+                    {/* Pay button */}
+                    {loan.status === "active" && (
+                      <button
+                        onClick={() =>
+                          alert(
+                            `To pay this loan, contact support and send this Loan ID with your payment proof:\n\n${loan.id}`
+                          )
+                        }
+                        className="w-full mt-2 py-2 rounded-lg bg-green-500 text-black font-medium hover:bg-green-400 transition"
+                      >
+                        Pay this loan
+                      </button>
                     )}
                   </div>
                 )}
