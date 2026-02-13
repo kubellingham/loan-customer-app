@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [expandedLoanId, setExpandedLoanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -80,15 +81,18 @@ export default function DashboardPage() {
 
   function getDaysRemaining(dueDate: string | null) {
     if (!dueDate) return null;
-
     const now = new Date();
     const due = new Date(dueDate);
-
     const diff = due.getTime() - now.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
-  // Separate loans
+  function copyLoanId(id: string) {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
   const activeLoans = loans
     .filter((l) => l.status === "active" && l.due_date)
     .sort(
@@ -97,10 +101,13 @@ export default function DashboardPage() {
         new Date(b.due_date!).getTime()
     );
 
+  const pendingLoans = loans.filter((l) => l.status === "pending");
+
   const mainLoan = activeLoans[0] || null;
-  const otherLoans = loans.filter(
-    (l) => !mainLoan || l.id !== mainLoan.id
-  );
+  const otherLoans =
+    activeLoans.length > 1
+      ? activeLoans.slice(1)
+      : [];
 
   if (loading) {
     return (
@@ -125,13 +132,6 @@ export default function DashboardPage() {
         Hello {customer?.full_name} 👋
       </h1>
 
-      <p className="text-gray-400 mb-8">
-        Account status:{" "}
-        <span className="text-green-400 capitalize">
-          {customer?.state}
-        </span>
-      </p>
-
       {/* Request button */}
       <div className="mb-8">
         <button
@@ -142,19 +142,26 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {loans.length === 0 && (
-        <div className="rounded-xl border border-gray-800 p-6 bg-[#020617]">
-          <p className="text-gray-400">
-            You have no active loan.
+      {/* Pending loans */}
+      {pendingLoans.map((loan) => (
+        <div
+          key={loan.id}
+          className="rounded-xl border border-gray-800 p-6 bg-[#020617] mb-4"
+        >
+          <p className="text-gray-400 text-sm mb-2">
+            Pending approval
+          </p>
+          <p className="text-2xl font-semibold">
+            ₹{loan.amount.toLocaleString()}
           </p>
         </div>
-      )}
+      ))}
 
       {/* Main active loan */}
       {mainLoan && (
         <div className="rounded-xl border border-gray-800 p-6 bg-[#020617] mb-6">
           <p className="text-gray-400 text-sm mb-2">
-            Most urgent loan
+            Active loan
           </p>
 
           <p className="text-2xl font-semibold mb-4">
@@ -183,136 +190,71 @@ export default function DashboardPage() {
                 </span>
               </div>
             )}
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400">
+                Loan ID
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs">
+                  {mainLoan.id}
+                </span>
+                <button
+                  onClick={() => copyLoanId(mainLoan.id)}
+                  className="text-yellow-400 text-xs"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            {copiedId === mainLoan.id && (
+              <p className="text-green-400 text-xs">
+                Loan ID copied
+              </p>
+            )}
           </div>
 
-          {/* Countdown */}
-          {mainLoan.due_date && (
-            <div className="mt-4 text-sm font-medium">
-              {(() => {
-                const days = getDaysRemaining(
-                  mainLoan.due_date
-                );
-                if (days === null) return null;
-
-                if (days > 0)
-                  return `${days} day(s) remaining`;
-                if (days === 0) return "Due today";
-                return `Overdue by ${Math.abs(days)} days`;
-              })()}
-            </div>
-          )}
+          <button
+            onClick={() => router.push("/pay-loan")}
+            className="mt-6 w-full py-3 rounded-lg bg-yellow-500 text-black font-medium"
+          >
+            Pay this loan
+          </button>
         </div>
       )}
 
-      {/* Other loans (expandable) */}
+      {/* Other loans */}
       {otherLoans.length > 0 && (
         <div className="space-y-4">
           <p className="text-gray-400 text-sm">
             Other loans
           </p>
 
-          {otherLoans.map((loan) => {
-            const isExpanded =
-              expandedLoanId === loan.id;
-
-            return (
-              <div
-                key={loan.id}
-                className="rounded-xl border border-gray-800 bg-[#020617]"
-              >
-                {/* Header */}
-                <div
-                  onClick={() =>
-                    setExpandedLoanId(
-                      isExpanded ? null : loan.id
-                    )
-                  }
-                  className="p-4 cursor-pointer"
-                >
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      Amount
-                    </span>
-                    <span>
-                      ₹{loan.amount.toLocaleString()}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">
-                      Status
-                    </span>
-                    <span className="capitalize">
-                      {loan.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Expanded content */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 space-y-3 text-sm border-t border-gray-800 pt-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">
-                        Loan ID
-                      </span>
-                      <span className="font-mono text-xs">
-                        {loan.id}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">
-                        Total repayment
-                      </span>
-                      <span>
-                        ₹{loan.total_repayment.toLocaleString()}
-                      </span>
-                    </div>
-
-                    {loan.approved_at && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">
-                          Loan started
-                        </span>
-                        <span>
-                          {new Date(
-                            loan.approved_at
-                          ).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {loan.due_date && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">
-                          Return by
-                        </span>
-                        <span>
-                          {new Date(
-                            loan.due_date
-                          ).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Pay button */}
-                    {loan.status === "active" && (
-                      <button
-                        onClick={() =>
-                          alert(
-                            `To pay this loan, contact support and send this Loan ID with your payment proof:\n\n${loan.id}`
-                          )
-                        }
-                        className="w-full mt-2 py-2 rounded-lg bg-green-500 text-black font-medium hover:bg-green-400 transition"
-                      >
-                        Pay this loan
-                      </button>
-                    )}
-                  </div>
-                )}
+          {otherLoans.map((loan) => (
+            <div
+              key={loan.id}
+              className="rounded-xl border border-gray-800 p-4 bg-[#020617]"
+            >
+              <div className="flex justify-between">
+                <span className="text-gray-400">
+                  Amount
+                </span>
+                <span>
+                  ₹{loan.amount.toLocaleString()}
+                </span>
               </div>
-            );
-          })}
+
+              <div className="flex justify-between">
+                <span className="text-gray-400">
+                  Status
+                </span>
+                <span className="capitalize">
+                  {loan.status}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </main>
