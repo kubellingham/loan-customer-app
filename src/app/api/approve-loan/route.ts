@@ -1,39 +1,26 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-export async function OPTIONS() {
-  return NextResponse.json({}, {
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
-}
-
 export async function POST(req: Request) {
   try {
     const { loanId } = await req.json();
 
     if (!loanId) {
-      return NextResponse.json(
-        { success: false },
-        { status: 400, headers: { "Access-Control-Allow-Origin": "*" } }
-      );
+      return NextResponse.json({ success: false });
     }
 
-    // Get loan amount
-    const { data: loan, error: loanError } = await supabase
+    // Get loan details first
+    const { data: loan, error: fetchError } = await supabase
       .from("loans")
-      .select("amount")
+      .select("id, amount, customer_id")
       .eq("id", loanId)
       .single();
 
-    if (loanError || !loan) {
-      return NextResponse.json(
-        { success: false, error: "Loan not found" },
-        { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
-      );
+    if (fetchError || !loan) {
+      return NextResponse.json({
+        success: false,
+        error: "Loan not found",
+      });
     }
 
     const now = new Date();
@@ -42,33 +29,45 @@ export async function POST(req: Request) {
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 30);
 
-    const totalRepayment = Math.round(loan.amount * 1.15);
-
-    const { error } = await supabase
+    // Update loan
+    const { error: updateError } = await supabase
       .from("loans")
       .update({
         status: "active",
         approved_at: approvedAt,
         due_date: dueDate.toISOString(),
-        total_repayment: totalRepayment,
       })
       .eq("id", loanId);
 
-    if (error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
-      );
+    if (updateError) {
+      return NextResponse.json({
+        success: false,
+        error: updateError.message,
+      });
     }
 
-    return NextResponse.json(
-      { success: true },
-      { headers: { "Access-Control-Allow-Origin": "*" } }
-    );
+    // Create finance transaction (loan out)
+    const { error: txError } = await supabase
+      .from("finance_transactions")
+      .insert({
+        type: "loan_out",
+        amount: loan.amount,
+        customer_id: loan.customer_id,
+        note: "Loan disbursed",
+      });
+
+    if (txError) {
+      return NextResponse.json({
+        success: false,
+        error: txError.message,
+      });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
-    );
+    return NextResponse.json({
+      success: false,
+      error: err.message,
+    });
   }
 }
