@@ -38,10 +38,14 @@ export default function DashboardPage() {
 
       const sessionData = await sessionRes.json();
 
-      if (!sessionData.active || !sessionData.customer) {
-        router.push("/");
-        return;
-      }
+      if (
+  !sessionData.active ||
+  !sessionData.customer ||
+  sessionData.customer.state === "suspended"
+) {
+  router.push("/");
+  return;
+}
 
       const customerData = sessionData.customer;
       setCustomer(customerData);
